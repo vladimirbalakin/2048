@@ -1,4 +1,5 @@
 import random
+import json
 from time import sleep
 
 import pygame
@@ -15,6 +16,9 @@ class Polygon:
     cell_w, cell_h = 4, 4
     cell_width = 50
     built = 2
+    new_choose = (-1, -1)
+    score = 0
+    best_score = 0
 
     def __init__(self, how_many_cells=4, width=50):
         self.cell_w = how_many_cells
@@ -32,8 +36,27 @@ class Polygon:
                     continue
                 font = pygame.font.SysFont(None, 24)
                 img = font.render(str(j), True, 'RED')
+                if (ip, jp) == self.new_choose:
+                    img = font.render(str(j), True, 'BLUE')
+                    self.new_choose = (-1, -1)
                 root.blit(img, ((ip + 0.5) * self.cell_width, (jp + 0.5) * self.cell_width))
-                display.flip()
+        font = pygame.font.SysFont(None, 50)
+        img = font.render("Score: {}".format(self.score), True, 'RED')
+        root.blit(img, ((len(self.numbers) + 1) * self.cell_width, 0))
+        font = pygame.font.SysFont(None, 50)
+        img = font.render("Best score: {}".format(self.best_score), True, 'RED')
+        root.blit(img, ((len(self.numbers) + 1) * self.cell_width, 100))
+        display.flip()
+
+    def recalculate_best_score(self):
+        with open("st.json", "r") as input_file:
+            self.best_score = json.load(input_file)
+        input_file.close()
+
+        self.best_score = max(self.score, self.best_score)
+
+        with open("st.json", "w") as output_file:
+            json.dump(self.best_score, output_file)
 
     def shift(self, direction=0):
         ans = False
@@ -51,6 +74,7 @@ class Polygon:
                             if self.numbers[i][q] == self.numbers[i][j]:
                                 self.numbers[i][q] += self.numbers[i][j]
                                 self.numbers[i][j] = -1
+                                self.score += self.numbers[i][q]
                                 ans = True
                                 fl = True
                             else:
@@ -76,6 +100,7 @@ class Polygon:
                             if self.numbers[i][q] == self.numbers[i][j]:
                                 self.numbers[i][q] += self.numbers[i][j]
                                 self.numbers[i][j] = -1
+                                self.score += self.numbers[i][q]
                                 ans = True
                                 fl = True
                             else:
@@ -101,6 +126,7 @@ class Polygon:
                             if self.numbers[q][i] == self.numbers[j][i]:
                                 self.numbers[q][i] += self.numbers[j][i]
                                 self.numbers[j][i] = -1
+                                self.score += self.numbers[q][i]
                                 ans = True
                                 fl = True
                             else:
@@ -126,6 +152,7 @@ class Polygon:
                             if self.numbers[q][i] == self.numbers[j][i]:
                                 self.numbers[q][i] += self.numbers[j][i]
                                 self.numbers[j][i] = -1
+                                self.score += self.numbers[q][i]
                                 ans = True
                                 fl = True
                             else:
@@ -153,11 +180,13 @@ class Polygon:
             return error
         chosen = random.choice(a)
         self.numbers[chosen[0]][chosen[1]] = self.built
+        self.new_choose = chosen
 
 
 # draw.circle(root, color, (x, y), 1, 1)
 
 poly = Polygon()
+poly.recalculate_best_score()
 poly.redraw()
 
 running = True
@@ -184,25 +213,26 @@ while running:
             print("WHEEL")
         if e.type == KEYDOWN:
             if e.key == K_RIGHT:
-                if not poly.shift(1):
-                    err = poly.get_random_new_number()
+                poly.shift(1)
+                err = poly.get_random_new_number()
                 poly.redraw()
             if e.key == K_LEFT:
-                if not poly.shift(3):
-                    err = poly.get_random_new_number()
+                poly.shift(3)
+                err = poly.get_random_new_number()
                 poly.redraw()
             if e.key == K_UP:
-                if not poly.shift(2):
-                    err = poly.get_random_new_number()
+                poly.shift(2)
+                err = poly.get_random_new_number()
                 poly.redraw()
             if e.key == K_DOWN:
-                if not poly.shift(0):
-                    err = poly.get_random_new_number()
+                poly.shift(0)
+                err = poly.get_random_new_number()
                 poly.redraw()
     display.flip()
     sleep(0.1)
 display_error(err)
 if err != 'QUITING':
     sleep(3)
+poly.recalculate_best_score()
 display.quit()
 # You could understand nothing in this code because I have written it!
